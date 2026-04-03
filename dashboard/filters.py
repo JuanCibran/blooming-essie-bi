@@ -42,5 +42,5 @@ def date_filter(df: pd.DataFrame, date_col: str = "date"):
         st.caption(f"{start.strftime('%d/%m/%Y')} → {end.strftime('%d/%m/%Y')}")
 
     df = df.copy()
-    df[date_col] = pd.to_datetime(df[date_col]).dt.date
+    df[date_col] = pd.to_datetime(df[date_col].astype(str)).dt.date
     return df[(df[date_col] >= start) & (df[date_col] <= end)].copy(), start, end

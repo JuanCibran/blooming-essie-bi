@@ -31,7 +31,7 @@ try:
     first_last_month = (first_this_month - timedelta(days=1)).replace(day=1)
     last_last_month = first_this_month - timedelta(days=1)
 
-    daily_all["date"] = pd.to_datetime(daily_all["date"]).dt.date
+    daily_all["date"] = pd.to_datetime(daily_all["date"].astype(str)).dt.date
 
     this_month = daily_all[daily_all["date"] >= first_this_month]
     last_month = daily_all[(daily_all["date"] >= first_last_month) & (daily_all["date"] <= last_last_month)]
