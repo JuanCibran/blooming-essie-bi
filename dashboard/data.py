@@ -107,15 +107,18 @@ def get_unconverted_customers() -> pd.DataFrame:
 
 @st.cache_data(ttl=3600)
 def get_abandoned_carts() -> pd.DataFrame:
-    return run_query(f"""
-        SELECT
-          name,
-          email,
-          ROUND(total, 2) AS total,
-          DATE(created_at) AS fecha
-        FROM `{PROJECT}.{DATASET}.abandoned_carts`
-        ORDER BY created_at DESC
-    """)
+    try:
+        return run_query(f"""
+            SELECT
+              name,
+              email,
+              ROUND(total, 2) AS total,
+              DATE(created_at) AS fecha
+            FROM `{PROJECT}.{DATASET}.abandoned_carts`
+            ORDER BY created_at DESC
+        """)
+    except Exception:
+        return pd.DataFrame(columns=["name", "email", "total", "fecha"])
 
 # --- Product Performance ---
 
