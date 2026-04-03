@@ -91,6 +91,20 @@ def get_top_customers() -> pd.DataFrame:
         LIMIT 20
     """)
 
+@st.cache_data(ttl=3600)
+def get_unconverted_customers() -> pd.DataFrame:
+    return run_query(f"""
+        SELECT
+          name,
+          email,
+          DATE(created_at) AS fecha_registro
+        FROM `{PROJECT}.{DATASET}.customers`
+        WHERE total_spent = 0
+          AND email IS NOT NULL
+          AND email != ''
+        ORDER BY created_at DESC
+    """)
+
 # --- Product Performance ---
 
 @st.cache_data(ttl=3600)

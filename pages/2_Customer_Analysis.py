@@ -5,7 +5,7 @@ load_dotenv()
 
 import streamlit as st
 import plotly.express as px
-from dashboard.data import get_customer_segments, get_top_customers
+from dashboard.data import get_customer_segments, get_top_customers, get_unconverted_customers
 
 st.set_page_config(page_title="Customer Analysis", layout="wide")
 st.title("Customer Analysis")
@@ -14,9 +14,10 @@ st.divider()
 try:
     segments = get_customer_segments()
     top = get_top_customers()
+    unconverted = get_unconverted_customers()
 
     # KPIs
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Clientes", f"{int(segments['customers'].sum())}")
     with col2:
@@ -25,6 +26,9 @@ try:
     with col3:
         avg = segments['avg_spent'].mean()
         st.metric("Gasto Promedio por Cliente", f"${avg:,.0f}")
+    with col4:
+        st.metric("Oportunidades sin convertir", len(unconverted),
+                  delta=f"{len(unconverted)} sin compra", delta_color="inverse")
 
     st.divider()
 
@@ -56,6 +60,31 @@ try:
             ),
         },
     )
+
+    st.divider()
+
+    # Oportunidades de conversión
+    st.subheader(f"Oportunidades de conversion — se registraron pero nunca compraron ({len(unconverted)})")
+    if unconverted.empty:
+        st.success("Todos los clientes registrados compraron al menos una vez.")
+    else:
+        st.info("Estos clientes te dieron su email pero nunca compraron. Son candidatos ideales para una campaña de email o retargeting en Meta.")
+        st.dataframe(
+            unconverted.rename(columns={
+                "name":            "Nombre",
+                "email":           "Email",
+                "fecha_registro":  "Se registró el",
+            }),
+            use_container_width=True,
+            hide_index=True,
+        )
+        csv = unconverted.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Descargar lista para campaña (CSV)",
+            data=csv,
+            file_name="leads_sin_convertir.csv",
+            mime="text/csv",
+        )
 
 except Exception as e:
     st.error(f"Error: {e}")
