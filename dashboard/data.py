@@ -102,8 +102,8 @@ def get_product_performance() -> pd.DataFrame:
           stock,
           CASE
             WHEN stock = 0 THEN 'Sin Stock'
-            WHEN stock <= 5 THEN 'Stock Critico'
-            WHEN stock <= 15 THEN 'Stock Bajo'
+            WHEN stock <= 2 THEN 'Stock Critico'
+            WHEN stock <= 4 THEN 'Stock Bajo'
             ELSE 'OK'
           END AS stock_status,
           ROUND(price * stock, 2) AS inventory_value
