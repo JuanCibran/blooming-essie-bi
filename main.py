@@ -3,7 +3,6 @@ Blooming Essie BI — Daily ETL pipeline.
 Pulls data from Tienda Nube and Facebook Ads, loads into BigQuery.
 Sends purchase events to Meta Conversions API (CAPI).
 """
-import os
 from etl.tienda_nube import extract_orders, extract_products, extract_customers
 from etl.bigquery_loader import load_dataframe
 from config.settings import FACEBOOK_ACCESS_TOKEN
@@ -35,14 +34,14 @@ def run():
     )
 
     # --- Meta Conversions API (optional) ---
-    pixel_id = os.getenv("FACEBOOK_PIXEL_ID")
-    if pixel_id and FACEBOOK_ACCESS_TOKEN and not FACEBOOK_ACCESS_TOKEN.startswith("your_"):
+    from config.settings import FACEBOOK_PIXEL_ID
+    if FACEBOOK_PIXEL_ID and FACEBOOK_ACCESS_TOKEN and not FACEBOOK_ACCESS_TOKEN.startswith("your_"):
         from etl.meta_capi import send_purchase_events
         print("\n[+] Sending purchase events to Meta CAPI...")
         sent = send_purchase_events(orders_df)
         print(f"    {sent} eventos enviados a Meta.")
     else:
-        print("\n[!] Meta CAPI skipped — FACEBOOK_PIXEL_ID no configurado.")
+        print("\n[!] Meta CAPI skipped — FACEBOOK_ACCESS_TOKEN no configurado.")
 
     # --- Facebook Ads (optional) ---
     if FACEBOOK_ACCESS_TOKEN and not FACEBOOK_ACCESS_TOKEN.startswith("your_"):

@@ -10,10 +10,10 @@ from config.settings import (
     FACEBOOK_APP_ID,
     FACEBOOK_APP_SECRET,
     FACEBOOK_ACCESS_TOKEN,
+    FACEBOOK_PIXEL_ID,
 )
-import os
 
-PIXEL_ID = os.getenv("FACEBOOK_PIXEL_ID")
+PIXEL_ID = FACEBOOK_PIXEL_ID
 
 
 def _hash(value: str) -> str:
