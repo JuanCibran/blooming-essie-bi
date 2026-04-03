@@ -62,12 +62,14 @@ def get_orders_by_status() -> pd.DataFrame:
 
 @st.cache_data(ttl=3600)
 def get_customer_segments() -> pd.DataFrame:
+    # Segmentamos por total_spent ya que orders_count no viene de la API de Tienda Nube
     return run_query(f"""
         SELECT
           CASE
-            WHEN orders_count = 1 THEN 'Nuevo'
-            WHEN orders_count BETWEEN 2 AND 3 THEN 'Recurrente'
-            ELSE 'Fiel'
+            WHEN total_spent = 0 THEN 'Sin compras'
+            WHEN total_spent < 50000 THEN 'Bajo (< $50k)'
+            WHEN total_spent < 200000 THEN 'Medio ($50k-$200k)'
+            ELSE 'Alto (> $200k)'
           END AS segment,
           COUNT(*) AS customers,
           ROUND(SUM(total_spent), 2) AS revenue,
@@ -82,10 +84,9 @@ def get_top_customers() -> pd.DataFrame:
         SELECT
           name,
           email,
-          orders_count,
-          ROUND(total_spent, 2) AS total_spent,
-          ROUND(total_spent / NULLIF(orders_count, 0), 2) AS avg_order_value
+          ROUND(total_spent, 2) AS total_spent
         FROM `{PROJECT}.{DATASET}.customers`
+        WHERE total_spent > 0
         ORDER BY total_spent DESC
         LIMIT 20
     """)

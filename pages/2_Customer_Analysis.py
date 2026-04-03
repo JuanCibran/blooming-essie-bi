@@ -16,69 +16,45 @@ try:
     top = get_top_customers()
 
     # KPIs
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Clientes", f"{int(segments['customers'].sum())}")
     with col2:
-        nuevos = segments[segments["segment"] == "Nuevo"]["customers"].sum()
-        st.metric("Clientes Nuevos", f"{int(nuevos)}")
+        revenue_total = segments['revenue'].sum()
+        st.metric("Revenue Total Clientes", f"${revenue_total:,.0f}")
     with col3:
-        recurrentes = segments[segments["segment"] != "Nuevo"]["customers"].sum()
-        st.metric("Recurrentes + Fieles", f"{int(recurrentes)}")
-    with col4:
-        retention = recurrentes / segments["customers"].sum() * 100 if segments["customers"].sum() > 0 else 0
-        st.metric("Tasa de Retención", f"{retention:.1f}%")
+        avg = segments['avg_spent'].mean()
+        st.metric("Gasto Promedio por Cliente", f"${avg:,.0f}")
 
     st.divider()
 
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        st.subheader("Clientes por segmento")
-        fig1 = px.pie(
-            segments, names="segment", values="customers",
-            color_discrete_sequence=["#f8a4d0", "#e91e8c", "#9c1463"],
-        )
-        fig1.update_traces(textinfo="percent+label")
-        fig1.update_layout(margin=dict(t=10, b=10))
-        st.plotly_chart(fig1, use_container_width=True)
-
-    with col_right:
-        st.subheader("Revenue por segmento")
-        fig2 = px.bar(
-            segments, x="segment", y="revenue",
-            labels={"segment": "Segmento", "revenue": "Revenue (ARS)"},
-            color="segment",
-            color_discrete_sequence=["#f8a4d0", "#e91e8c", "#9c1463"],
-            text="revenue",
-        )
-        fig2.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
-        fig2.update_layout(margin=dict(t=10, b=10), showlegend=False)
-        st.plotly_chart(fig2, use_container_width=True)
-
-    # Top clientes
-    st.subheader("Top 20 clientes por revenue")
-    fig3 = px.bar(
-        top.head(10), x="name", y="total_spent",
-        labels={"name": "Cliente", "total_spent": "Total Gastado (ARS)"},
-        color_discrete_sequence=["#e91e8c"],
-        text="total_spent",
+    # Segmentos por gasto
+    st.subheader("Clientes por nivel de gasto")
+    fig = px.pie(
+        segments, names="segment", values="customers",
+        color_discrete_sequence=["#f8a4d0", "#e91e8c", "#9c1463", "#cccccc"],
     )
-    fig3.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
-    fig3.update_layout(margin=dict(t=10, b=40))
-    st.plotly_chart(fig3, use_container_width=True)
+    fig.update_traces(textinfo="percent+label+value")
+    fig.update_layout(margin=dict(t=10, b=10))
+    st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Tabla completa de clientes")
+    st.divider()
+
+    # Top 20 clientes
+    st.subheader("Top 20 clientes por revenue")
     st.dataframe(
         top.rename(columns={
-            "name": "Nombre",
-            "email": "Email",
-            "orders_count": "Compras",
-            "total_spent": "Total Gastado",
-            "avg_order_value": "Ticket Promedio",
+            "name":        "Cliente",
+            "email":       "Email",
+            "total_spent": "Total Gastado ($)",
         }),
         use_container_width=True,
         hide_index=True,
+        column_config={
+            "Total Gastado ($)": st.column_config.NumberColumn(
+                "Total Gastado", format="$ %.2f",
+            ),
+        },
     )
 
 except Exception as e:
