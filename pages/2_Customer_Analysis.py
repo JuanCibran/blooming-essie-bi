@@ -31,8 +31,8 @@ try:
         avg = segments['avg_spent'].mean()
         st.metric("Gasto Promedio por Cliente", f"${avg:,.0f}")
     with col4:
-        st.metric("Carritos abandonados", len(carts),
-                  delta=f"${carts['total'].sum():,.0f} en juego" if not carts.empty else None,
+        st.metric("Oportunidades campaña", len(unconverted) + len(carts),
+                  delta=f"{len(unconverted)} sin compra · {len(carts)} carritos",
                   delta_color="inverse")
 
     st.divider()
@@ -68,64 +68,54 @@ try:
 
     st.divider()
 
-    # Oportunidades de conversión
-    st.subheader(f"Oportunidades de conversion — se registraron pero nunca compraron ({len(unconverted)})")
-    if unconverted.empty:
-        st.success("Todos los clientes registrados compraron al menos una vez.")
-    else:
-        st.info("Estos clientes te dieron su email pero nunca compraron. Son candidatos ideales para una campaña de email o retargeting en Meta.")
-        st.dataframe(
-            unconverted.rename(columns={
-                "name":            "Nombre",
-                "email":           "Email",
-                "fecha_registro":  "Se registró el",
-            }),
-            use_container_width=True,
-            hide_index=True,
-        )
-        import io, csv as _csv
-        _buf = io.StringIO()
-        _w = _csv.writer(_buf)
-        _w.writerows([unconverted.columns.tolist()] + unconverted.astype(str).values.tolist())
-        st.download_button(
-            label="Descargar lista para campaña (CSV)",
-            data=_buf.getvalue().encode("utf-8"),
-            file_name="leads_sin_convertir.csv",
-            mime="text/csv",
-        )
+    # Oportunidades de campaña — merge sin repetir emails
+    import pandas as pd, io, csv as _csv
 
-    st.divider()
+    leads_unconverted = unconverted[["name", "email"]].copy()
+    leads_unconverted["origen"] = "Sin compras"
+    leads_unconverted["monto"] = 0.0
 
-    # Carritos abandonados
-    st.subheader(f"Carritos abandonados ({len(carts)})")
-    if carts.empty:
-        st.success("No hay carritos abandonados registrados.")
+    leads_carts = carts[["name", "email", "total"]].copy().rename(columns={"total": "monto"})
+    leads_carts["origen"] = "Carrito abandonado"
+
+    leads = pd.concat([leads_unconverted, leads_carts], ignore_index=True)
+    # Deduplicar por email — priorizar carrito abandonado (más intención)
+    leads = leads.sort_values("origen").drop_duplicates(subset="email", keep="first").reset_index(drop=True)
+
+    st.subheader(f"Oportunidades de campaña ({len(leads)} contactos únicos)")
+
+    if leads.empty:
+        st.success("No hay oportunidades pendientes.")
     else:
-        cart_value = carts["total"].sum()
-        st.info(f"Hay **${cart_value:,.0f}** en carritos que no completaron la compra. Estos contactos ya mostraron intención — son los mejores candidatos para recuperación por email o retargeting.")
+        cart_value = carts["total"].sum() if not carts.empty else 0
+        msg = f"**{len(leads)} contactos** para campañas"
+        if len(unconverted) > 0:
+            msg += f" — {len(unconverted)} nunca compraron"
+        if not carts.empty:
+            msg += f", {len(carts)} dejaron carritos (${cart_value:,.0f} en juego)"
+        st.info(msg)
+
         st.dataframe(
-            carts.rename(columns={
-                "name":  "Nombre",
-                "email": "Email",
-                "total": "Monto del carrito ($)",
-                "fecha": "Fecha",
+            leads.rename(columns={
+                "name":   "Nombre",
+                "email":  "Email",
+                "origen": "Origen",
+                "monto":  "Monto carrito ($)",
             }),
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Monto del carrito ($)": st.column_config.NumberColumn(
-                    "Monto del carrito", format="$ %.0f",
-                ),
+                "Monto carrito ($)": st.column_config.NumberColumn(format="$ %.0f"),
             },
         )
-        import io, csv as _csv
-        _buf2 = io.StringIO()
-        _w2 = _csv.writer(_buf2)
-        _w2.writerows([carts.columns.tolist()] + carts.astype(str).values.tolist())
+
+        _buf = io.StringIO()
+        _w = _csv.writer(_buf)
+        _w.writerows([leads.columns.tolist()] + leads.astype(str).values.tolist())
         st.download_button(
-            label="Descargar carritos para campaña (CSV)",
-            data=_buf2.getvalue().encode("utf-8"),
-            file_name="carritos_abandonados.csv",
+            label="Descargar lista para campaña (CSV)",
+            data=_buf.getvalue().encode("utf-8"),
+            file_name="oportunidades_campana.csv",
             mime="text/csv",
         )
 
