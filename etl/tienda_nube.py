@@ -18,6 +18,8 @@ def fetch_all_pages(endpoint: str, params: dict = None) -> list:
             headers=TIENDANUBE_HEADERS,
             params=params,
         )
+        if response.status_code == 404:
+            break
         response.raise_for_status()
         data = response.json()
         if not data:

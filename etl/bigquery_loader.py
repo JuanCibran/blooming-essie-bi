@@ -89,6 +89,14 @@ def load_dataframe(
     table_id = f"{BIGQUERY_PROJECT_ID}.{BIGQUERY_DATASET_ID}.{table_name}"
     schema = TABLE_SCHEMAS.get(table_name)
 
+    # Convert TIMESTAMP and DATE columns from string to datetime
+    for field in schema:
+        if field.name in df.columns:
+            if field.field_type == "TIMESTAMP":
+                df[field.name] = pd.to_datetime(df[field.name], utc=True, errors="coerce")
+            elif field.field_type == "DATE":
+                df[field.name] = pd.to_datetime(df[field.name], errors="coerce").dt.date
+
     job_config = bigquery.LoadJobConfig(
         schema=schema,
         write_disposition=write_disposition,
