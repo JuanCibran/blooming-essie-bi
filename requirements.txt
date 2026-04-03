@@ -1,0 +1,6 @@
+python-dotenv==1.0.0
+google-cloud-bigquery==3.13.0
+facebook-business==17.0.4
+requests==2.31.0
+pandas==2.1.4
+db-dtypes==1.2.0
