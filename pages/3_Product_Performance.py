@@ -3,7 +3,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-import pandas as pd
 import streamlit as st
 from dashboard.data import get_product_performance
 
@@ -24,8 +23,11 @@ TEXT_COLORS = {
     "OK":            "#1a6e35",
 }
 
-def render_html_table(df: pd.DataFrame, status_col: str) -> str:
-    headers = "".join(f"<th style='padding:8px 12px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;'>{c}</th>" for c in df.columns)
+def render_html_table(df, status_col):
+    headers = "".join(
+        f"<th style='padding:8px 12px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;'>{c}</th>"
+        for c in df.columns
+    )
     rows = ""
     for _, row in df.iterrows():
         status = row[status_col]
@@ -67,51 +69,35 @@ try:
 
     st.divider()
 
-    # Productos que necesitan reposición
-    alertas = prod[prod["stock_status"].isin(["Sin Stock", "Stock Critico", "Stock Bajo"])] \
-                .sort_values("stock")[["product_name", "sku", "stock", "stock_status", "price"]]
-
-    st.subheader(f"Productos que necesitan reposicion ({len(alertas)})")
-
-    if alertas.empty:
-        st.success("Todos los productos tienen stock OK.")
-    else:
-        display = alertas.rename(columns={
-            "product_name": "Producto",
-            "sku":          "SKU",
-            "stock":        "Stock actual",
-            "stock_status": "Estado",
-            "price":        "Precio ($)",
-        })
-        st.markdown(render_html_table(display, "Estado"), unsafe_allow_html=True)
-
-        st.write("")
-        csv = display.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Descargar lista para proveedor (CSV)",
-            data=csv,
-            file_name="reposicion_blooming_essie.csv",
-            mime="text/csv",
-        )
-
-    st.divider()
-
-    # Todos los productos
-    st.subheader("Todos los productos")
     col_filter, _ = st.columns([2, 3])
     with col_filter:
-        status_filter = st.multiselect("Filtrar por estado", options=order, default=order)
+        status_filter = st.multiselect(
+            "Filtrar por estado",
+            options=order,
+            default=order,
+        )
 
-    filtered = prod[prod["stock_status"].isin(status_filter)].copy().sort_values("stock")
-    display_all = filtered.rename(columns={
+    filtered = prod[prod["stock_status"].isin(status_filter)].sort_values("stock")
+
+    display = filtered.rename(columns={
         "product_name":    "Producto",
         "sku":             "SKU",
-        "price":           "Precio ($)",
         "stock":           "Stock",
         "stock_status":    "Estado",
+        "price":           "Precio ($)",
         "inventory_value": "Valor Inventario ($)",
-    })
-    st.markdown(render_html_table(display_all, "Estado"), unsafe_allow_html=True)
+    })[["Producto", "SKU", "Stock", "Estado", "Precio ($)", "Valor Inventario ($)"]]
+
+    st.markdown(render_html_table(display, "Estado"), unsafe_allow_html=True)
+
+    st.write("")
+    csv = display.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="Descargar CSV",
+        data=csv,
+        file_name="productos_blooming_essie.csv",
+        mime="text/csv",
+    )
 
 except Exception as e:
     st.error(f"Error: {e}")
