@@ -2,7 +2,7 @@ name: Daily BI Pipeline
 
 on:
   schedule:
-    - cron: "0 9 * * *"  # Every day at 9:00 AM UTC (6:00 AM Argentina)
+    - cron: "0 9,13,17,21 * * *"  # Every 4 hours: 6am, 10am, 2pm, 6pm Argentina
   workflow_dispatch:       # Allow manual runs from GitHub UI
 
 jobs:
