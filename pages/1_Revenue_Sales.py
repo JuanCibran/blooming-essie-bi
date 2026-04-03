@@ -13,11 +13,20 @@ st.title("Revenue & Sales")
 st.divider()
 
 try:
-    df_all = get_daily_revenue()
-    daily, start, end = date_filter(df_all)
+    daily_all = get_daily_revenue()
+    monthly_all = get_monthly_revenue()
+    status_all = get_orders_by_status()
 
-    monthly = get_monthly_revenue()
-    status = get_orders_by_status()
+    # Filtro de período — aplica sobre daily y mensual
+    daily, start, end = date_filter(daily_all)
+
+    # Filtrar monthly por el mismo rango
+    import pandas as pd
+    monthly_all["month_date"] = pd.to_datetime(monthly_all["month"] + "-01").dt.date
+    monthly = monthly_all[
+        (monthly_all["month_date"] >= start) &
+        (monthly_all["month_date"] <= end)
+    ].drop(columns=["month_date"])
 
     if daily.empty:
         st.warning("Sin datos para el período seleccionado. Probá con un rango más amplio.")
@@ -32,7 +41,7 @@ try:
     with col3:
         st.metric("Ticket Promedio", f"${daily['avg_order_value'].mean():,.0f}")
     with col4:
-        st.metric("Descuentos Aplicados", f"${daily['total_discounts'].sum():,.0f}")
+        st.metric("Descuentos", f"${daily['total_discounts'].sum():,.0f}")
 
     st.divider()
 
@@ -51,37 +60,45 @@ try:
 
     with col_left:
         st.subheader("Ingresos por mes")
-        fig2 = px.bar(
-            monthly, x="month", y="revenue",
-            labels={"month": "Mes", "revenue": "Ingresos (ARS)"},
-            color_discrete_sequence=["#e91e8c"],
-            text="revenue",
-        )
-        fig2.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
-        fig2.update_layout(margin=dict(t=10, b=10))
-        st.plotly_chart(fig2, use_container_width=True)
+        if monthly.empty:
+            st.info("Sin datos mensuales para el período.")
+        else:
+            fig2 = px.bar(
+                monthly, x="month", y="revenue",
+                labels={"month": "Mes", "revenue": "Ingresos (ARS)"},
+                color_discrete_sequence=["#e91e8c"],
+                text="revenue",
+            )
+            fig2.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
+            fig2.update_layout(margin=dict(t=10, b=10))
+            st.plotly_chart(fig2, use_container_width=True)
 
     with col_right:
         st.subheader("Ordenes por estado de pago")
         fig3 = px.pie(
-            status, names="payment_status", values="orders",
+            status_all, names="payment_status", values="orders",
             color_discrete_sequence=["#e91e8c", "#f8a4d0", "#9c1463", "#fce4f3"],
         )
         fig3.update_layout(margin=dict(t=10, b=10))
         st.plotly_chart(fig3, use_container_width=True)
 
-    # Tabla detalle diario
+    # Tabla detalle
     st.subheader("Detalle diario")
     st.dataframe(
         daily.sort_values("date", ascending=False).rename(columns={
-            "date": "Fecha",
-            "total_orders": "Ordenes",
-            "revenue": "Ingresos",
+            "date":            "Fecha",
+            "total_orders":    "Ordenes",
+            "revenue":         "Ingresos",
             "avg_order_value": "Ticket Promedio",
             "total_discounts": "Descuentos",
         }),
         use_container_width=True,
         hide_index=True,
+        column_config={
+            "Ingresos":        st.column_config.NumberColumn("Ingresos", format="$ %.0f"),
+            "Ticket Promedio": st.column_config.NumberColumn("Ticket Promedio", format="$ %.0f"),
+            "Descuentos":      st.column_config.NumberColumn("Descuentos", format="$ %.0f"),
+        },
     )
 
 except Exception as e:
