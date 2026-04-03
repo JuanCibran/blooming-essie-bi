@@ -7,9 +7,23 @@ PROJECT = os.getenv("BIGQUERY_PROJECT_ID", "blooming-essie")
 DATASET = os.getenv("BIGQUERY_DATASET_ID", "blooming_essie")
 
 def get_client():
-    creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    if creds:
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds
+    # Streamlit Cloud: credentials stored as JSON string in st.secrets
+    try:
+        import json, tempfile
+        sa_json = st.secrets.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+        if sa_json:
+            from google.oauth2 import service_account
+            info = json.loads(sa_json) if isinstance(sa_json, str) else dict(sa_json)
+            creds = service_account.Credentials.from_service_account_info(
+                info, scopes=["https://www.googleapis.com/auth/bigquery"]
+            )
+            return bigquery.Client(project=PROJECT, credentials=creds)
+    except Exception:
+        pass
+    # Local: use GOOGLE_APPLICATION_CREDENTIALS file
+    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if cred_path:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
     return bigquery.Client(project=PROJECT)
 
 def run_query(sql: str) -> pd.DataFrame:
