@@ -6,20 +6,27 @@ load_dotenv()
 import streamlit as st
 import plotly.express as px
 from dashboard.data import get_daily_revenue, get_monthly_revenue, get_orders_by_status
+from dashboard.filters import date_filter
 
 st.set_page_config(page_title="Revenue & Sales", layout="wide")
 st.title("Revenue & Sales")
 st.divider()
 
 try:
-    daily = get_daily_revenue()
+    df_all = get_daily_revenue()
+    daily, start, end = date_filter(df_all)
+
     monthly = get_monthly_revenue()
     status = get_orders_by_status()
+
+    if daily.empty:
+        st.warning("Sin datos para el período seleccionado. Probá con un rango más amplio.")
+        st.stop()
 
     # KPIs
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Ingresos Totales", f"${daily['revenue'].sum():,.0f}")
+        st.metric("Ingresos del período", f"${daily['revenue'].sum():,.0f}")
     with col2:
         st.metric("Total Ordenes", f"{int(daily['total_orders'].sum())}")
     with col3:
@@ -43,7 +50,6 @@ try:
     col_left, col_right = st.columns(2)
 
     with col_left:
-        # Ingresos mensuales
         st.subheader("Ingresos por mes")
         fig2 = px.bar(
             monthly, x="month", y="revenue",
@@ -56,7 +62,6 @@ try:
         st.plotly_chart(fig2, use_container_width=True)
 
     with col_right:
-        # Ordenes por estado de pago
         st.subheader("Ordenes por estado de pago")
         fig3 = px.pie(
             status, names="payment_status", values="orders",
