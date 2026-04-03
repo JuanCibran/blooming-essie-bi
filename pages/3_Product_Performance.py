@@ -11,6 +11,43 @@ st.set_page_config(page_title="Product Performance", layout="wide")
 st.title("Product Performance")
 st.divider()
 
+ROW_COLORS = {
+    "Sin Stock":     "#fde8e8",
+    "Stock Critico": "#fef3e2",
+    "Stock Bajo":    "#fefce8",
+    "OK":            "#ffffff",
+}
+TEXT_COLORS = {
+    "Sin Stock":     "#c0392b",
+    "Stock Critico": "#b7600a",
+    "Stock Bajo":    "#7d6608",
+    "OK":            "#1a6e35",
+}
+
+def render_html_table(df: pd.DataFrame, status_col: str) -> str:
+    headers = "".join(f"<th style='padding:8px 12px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;'>{c}</th>" for c in df.columns)
+    rows = ""
+    for _, row in df.iterrows():
+        status = row[status_col]
+        bg = ROW_COLORS.get(status, "#fff")
+        fg = TEXT_COLORS.get(status, "#333")
+        cells = ""
+        for col, val in row.items():
+            if col == status_col:
+                cells += f"<td style='padding:7px 12px; font-weight:600; color:{fg};'>{val}</td>"
+            else:
+                cells += f"<td style='padding:7px 12px; color:#222;'>{val}</td>"
+        rows += f"<tr style='background:{bg};'>{cells}</tr>"
+
+    return f"""
+    <div style='overflow-x:auto; border:1px solid #e0e0e0; border-radius:8px;'>
+    <table style='width:100%; border-collapse:collapse; font-size:14px;'>
+        <thead style='background:#f5f5f5;'><tr>{headers}</tr></thead>
+        <tbody>{rows}</tbody>
+    </table>
+    </div>
+    """
+
 try:
     prod = get_product_performance()
     order = ["Sin Stock", "Stock Critico", "Stock Bajo", "OK"]
@@ -30,7 +67,7 @@ try:
 
     st.divider()
 
-    # --- Productos que necesitan reposición ---
+    # Productos que necesitan reposición
     alertas = prod[prod["stock_status"].isin(["Sin Stock", "Stock Critico", "Stock Bajo"])] \
                 .sort_values("stock")[["product_name", "sku", "stock", "stock_status", "price"]]
 
@@ -39,31 +76,16 @@ try:
     if alertas.empty:
         st.success("Todos los productos tienen stock OK.")
     else:
-        def highlight(row):
-            if row["stock_status"] == "Sin Stock":
-                return ["background-color:#fde8e8"] * len(row)
-            elif row["stock_status"] == "Stock Critico":
-                return ["background-color:#fef3e2"] * len(row)
-            elif row["stock_status"] == "Stock Bajo":
-                return ["background-color:#fefce8"] * len(row)
-            return [""] * len(row)
-
         display = alertas.rename(columns={
             "product_name": "Producto",
             "sku":          "SKU",
             "stock":        "Stock actual",
             "stock_status": "Estado",
-            "price":        "Precio",
+            "price":        "Precio ($)",
         })
+        st.markdown(render_html_table(display, "Estado"), unsafe_allow_html=True)
 
-        st.dataframe(
-            display.style.apply(highlight, axis=1),
-            use_container_width=True,
-            hide_index=True,
-            height=500,
-        )
-
-        # Exportar como CSV para enviar al proveedor
+        st.write("")
         csv = display.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="Descargar lista para proveedor (CSV)",
@@ -74,29 +96,22 @@ try:
 
     st.divider()
 
-    # --- Todos los productos ---
+    # Todos los productos
     st.subheader("Todos los productos")
-
     col_filter, _ = st.columns([2, 3])
     with col_filter:
         status_filter = st.multiselect("Filtrar por estado", options=order, default=order)
 
-    filtered = prod[prod["stock_status"].isin(status_filter)].copy()
-
+    filtered = prod[prod["stock_status"].isin(status_filter)].copy().sort_values("stock")
     display_all = filtered.rename(columns={
         "product_name":    "Producto",
         "sku":             "SKU",
-        "price":           "Precio",
+        "price":           "Precio ($)",
         "stock":           "Stock",
         "stock_status":    "Estado",
-        "inventory_value": "Valor Inventario",
-    }).sort_values("Stock")
-
-    st.dataframe(
-        display_all.style.apply(highlight, axis=1),
-        use_container_width=True,
-        hide_index=True,
-    )
+        "inventory_value": "Valor Inventario ($)",
+    })
+    st.markdown(render_html_table(display_all, "Estado"), unsafe_allow_html=True)
 
 except Exception as e:
     st.error(f"Error: {e}")
