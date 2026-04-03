@@ -10,45 +10,12 @@ st.set_page_config(page_title="Product Performance", layout="wide")
 st.title("Product Performance")
 st.divider()
 
-ROW_COLORS = {
-    "Sin Stock":     "#fde8e8",
-    "Stock Critico": "#fef3e2",
-    "Stock Bajo":    "#fefce8",
-    "OK":            "#ffffff",
+INDICADOR = {
+    "Sin Stock":     "🔴 Sin Stock",
+    "Stock Critico": "🟠 Stock Critico",
+    "Stock Bajo":    "🟡 Stock Bajo",
+    "OK":            "🟢 OK",
 }
-TEXT_COLORS = {
-    "Sin Stock":     "#c0392b",
-    "Stock Critico": "#b7600a",
-    "Stock Bajo":    "#7d6608",
-    "OK":            "#1a6e35",
-}
-
-def render_html_table(df, status_col):
-    headers = "".join(
-        f"<th style='padding:8px 12px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;'>{c}</th>"
-        for c in df.columns
-    )
-    rows = ""
-    for _, row in df.iterrows():
-        status = row[status_col]
-        bg = ROW_COLORS.get(status, "#fff")
-        fg = TEXT_COLORS.get(status, "#333")
-        cells = ""
-        for col, val in row.items():
-            if col == status_col:
-                cells += f"<td style='padding:7px 12px; font-weight:600; color:{fg};'>{val}</td>"
-            else:
-                cells += f"<td style='padding:7px 12px; color:#222;'>{val}</td>"
-        rows += f"<tr style='background:{bg};'>{cells}</tr>"
-
-    return f"""
-    <div style='overflow-x:auto; border:1px solid #e0e0e0; border-radius:8px;'>
-    <table style='width:100%; border-collapse:collapse; font-size:14px;'>
-        <thead style='background:#f5f5f5;'><tr>{headers}</tr></thead>
-        <tbody>{rows}</tbody>
-    </table>
-    </div>
-    """
 
 try:
     prod = get_product_performance()
@@ -77,21 +44,41 @@ try:
             default=order,
         )
 
-    filtered = prod[prod["stock_status"].isin(status_filter)].sort_values("stock")
+    filtered = prod[prod["stock_status"].isin(status_filter)].sort_values("stock").copy()
+    filtered["estado"] = filtered["stock_status"].map(INDICADOR)
 
-    display = filtered.rename(columns={
+    display = filtered[["product_name", "sku", "stock", "estado", "price", "inventory_value"]].rename(columns={
         "product_name":    "Producto",
         "sku":             "SKU",
         "stock":           "Stock",
-        "stock_status":    "Estado",
-        "price":           "Precio ($)",
-        "inventory_value": "Valor Inventario ($)",
-    })[["Producto", "SKU", "Stock", "Estado", "Precio ($)", "Valor Inventario ($)"]]
+        "estado":          "Estado",
+        "price":           "Precio",
+        "inventory_value": "Valor Inventario",
+    })
 
-    st.markdown(render_html_table(display, "Estado"), unsafe_allow_html=True)
+    st.dataframe(
+        display,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Precio": st.column_config.NumberColumn(
+                "Precio", format="$ %.2f",
+            ),
+            "Valor Inventario": st.column_config.NumberColumn(
+                "Valor Inventario", format="$ %.2f",
+            ),
+            "Stock": st.column_config.NumberColumn(
+                "Stock", format="%d uds",
+            ),
+        },
+    )
 
     st.write("")
-    csv = display.to_csv(index=False).encode("utf-8")
+    csv = filtered[["product_name", "sku", "stock", "stock_status", "price"]].rename(columns={
+        "product_name": "Producto", "sku": "SKU", "stock": "Stock",
+        "stock_status": "Estado", "price": "Precio",
+    }).to_csv(index=False).encode("utf-8")
+
     st.download_button(
         label="Descargar CSV",
         data=csv,
