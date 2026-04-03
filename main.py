@@ -14,8 +14,8 @@ def run():
 
     # --- Tienda Nube ---
     print("\n[1/3] Extracting Tienda Nube orders...")
-    orders_df = extract_orders(days_back=1)
-    load_dataframe(orders_df, "orders")
+    orders_df = extract_orders(days_back=365)
+    load_dataframe(orders_df, "orders", write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
     print("\n[2/3] Extracting Tienda Nube products...")
     products_df = extract_products()
