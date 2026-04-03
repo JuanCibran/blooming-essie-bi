@@ -78,10 +78,14 @@ try:
             use_container_width=True,
             hide_index=True,
         )
-        csv = unconverted.to_csv(index=False).encode("utf-8")
+        import io, csv as _csv
+        _buf = io.StringIO()
+        _w = _csv.DictWriter(_buf, fieldnames=unconverted.columns.tolist())
+        _w.writeheader()
+        _w.writerows(unconverted.astype(str).to_dict("records"))
         st.download_button(
             label="Descargar lista para campaña (CSV)",
-            data=csv,
+            data=_buf.getvalue().encode("utf-8"),
             file_name="leads_sin_convertir.csv",
             mime="text/csv",
         )
