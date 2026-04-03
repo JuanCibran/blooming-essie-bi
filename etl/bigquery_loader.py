@@ -41,6 +41,7 @@ TABLE_SCHEMAS = {
         bigquery.SchemaField("variant_id", "STRING"),
         bigquery.SchemaField("product_name", "STRING"),
         bigquery.SchemaField("sku", "STRING"),
+        bigquery.SchemaField("variant_name", "STRING"),
         bigquery.SchemaField("price", "FLOAT"),
         bigquery.SchemaField("stock", "INTEGER"),
         bigquery.SchemaField("published", "BOOLEAN"),

@@ -47,8 +47,9 @@ try:
     filtered = prod[prod["stock_status"].isin(status_filter)].sort_values("stock").copy()
     filtered["estado"] = filtered["stock_status"].map(INDICADOR)
 
-    display = filtered[["product_name", "sku", "stock", "estado", "price", "inventory_value"]].rename(columns={
+    display = filtered[["product_name", "variant_name", "sku", "stock", "estado", "price", "inventory_value"]].rename(columns={
         "product_name":    "Producto",
+        "variant_name":    "Talle/Color",
         "sku":             "SKU",
         "stock":           "Stock",
         "estado":          "Estado",
@@ -75,9 +76,9 @@ try:
 
     st.write("")
     import io, csv as _csv
-    _csv_df = filtered[["product_name", "sku", "stock", "stock_status", "price"]].rename(columns={
-        "product_name": "Producto", "sku": "SKU", "stock": "Stock",
-        "stock_status": "Estado", "price": "Precio",
+    _csv_df = filtered[["product_name", "variant_name", "sku", "stock", "stock_status", "price"]].rename(columns={
+        "product_name": "Producto", "variant_name": "Talle/Color", "sku": "SKU",
+        "stock": "Stock", "stock_status": "Estado", "price": "Precio",
     })
     _buf = io.StringIO()
     _w = _csv.writer(_buf)

@@ -127,6 +127,7 @@ def get_product_performance() -> pd.DataFrame:
     return run_query(f"""
         SELECT
           product_name,
+          variant_name,
           sku,
           ROUND(price, 2) AS price,
           stock,
@@ -139,7 +140,7 @@ def get_product_performance() -> pd.DataFrame:
           ROUND(price * stock, 2) AS inventory_value
         FROM `{PROJECT}.{DATASET}.products`
         WHERE published = TRUE
-        ORDER BY stock ASC
+        ORDER BY product_name, stock ASC
     """)
 
 # --- Ads Performance ---

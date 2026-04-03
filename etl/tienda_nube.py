@@ -72,6 +72,10 @@ def extract_products() -> pd.DataFrame:
                     "variant_id": str(variant.get("id", "")),
                     "product_name": p.get("name", {}).get("es", ""),
                     "sku": variant.get("sku", ""),
+                    "variant_name": ", ".join(
+                        v.get("es") or v.get("en") or ""
+                        for v in variant.get("values", [])
+                    ),
                     "price": float(variant.get("price", 0)),
                     "stock": int(variant.get("stock", 0) or 0),
                     "published": p.get("published"),
