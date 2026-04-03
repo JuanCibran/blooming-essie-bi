@@ -18,8 +18,15 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("Blooming Essie")
-st.caption(f"Actualizado: {date.today().strftime('%d/%m/%Y')}")
+col_title, col_btn = st.columns([5, 1])
+with col_title:
+    st.title("Blooming Essie")
+    st.caption(f"Actualizado: {date.today().strftime('%d/%m/%Y')}")
+with col_btn:
+    st.write("")
+    if st.button("🔄 Refresh"):
+        st.cache_data.clear()
+        st.rerun()
 st.divider()
 
 try:

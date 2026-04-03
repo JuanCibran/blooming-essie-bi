@@ -30,7 +30,7 @@ def run_query(sql: str) -> pd.DataFrame:
 
 # --- Revenue & Sales ---
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_daily_revenue() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -45,7 +45,7 @@ def get_daily_revenue() -> pd.DataFrame:
         ORDER BY date
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_monthly_revenue() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -59,7 +59,7 @@ def get_monthly_revenue() -> pd.DataFrame:
         ORDER BY month
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_orders_by_status() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -72,7 +72,7 @@ def get_orders_by_status() -> pd.DataFrame:
 
 # --- Customer Analysis ---
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_customer_segments() -> pd.DataFrame:
     # Segmentamos por total_spent ya que orders_count no viene de la API de Tienda Nube
     return run_query(f"""
@@ -90,7 +90,7 @@ def get_customer_segments() -> pd.DataFrame:
         GROUP BY segment
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_top_customers() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -103,7 +103,7 @@ def get_top_customers() -> pd.DataFrame:
         LIMIT 20
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_unconverted_customers() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -117,7 +117,7 @@ def get_unconverted_customers() -> pd.DataFrame:
         ORDER BY created_at DESC
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_abandoned_carts() -> pd.DataFrame:
     try:
         return run_query(f"""
@@ -134,7 +134,7 @@ def get_abandoned_carts() -> pd.DataFrame:
 
 # --- Product Performance ---
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_product_performance() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -157,7 +157,7 @@ def get_product_performance() -> pd.DataFrame:
 
 # --- Ads Performance ---
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_ads_performance() -> pd.DataFrame:
     return run_query(f"""
         SELECT
@@ -172,7 +172,7 @@ def get_ads_performance() -> pd.DataFrame:
         ORDER BY date DESC
     """)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=900)
 def get_roas() -> pd.DataFrame:
     return run_query(f"""
         SELECT
