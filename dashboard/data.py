@@ -16,14 +16,6 @@ def run_query(sql: str) -> pd.DataFrame:
     client = get_client()
     return client.query(sql).to_dataframe()
 
-# Subquery que deduplica órdenes por order_id (el ETL append puede duplicar)
-DEDUP_ORDERS = f"""
-    SELECT * EXCEPT(rn) FROM (
-        SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY created_at DESC) AS rn
-        FROM `{PROJECT}.{DATASET}.orders`
-    ) WHERE rn = 1
-"""
-
 # --- Revenue & Sales ---
 
 @st.cache_data(ttl=3600)
@@ -35,7 +27,7 @@ def get_daily_revenue() -> pd.DataFrame:
           ROUND(SUM(total), 2) AS revenue,
           ROUND(AVG(total), 2) AS avg_order_value,
           ROUND(SUM(discount), 2) AS total_discounts
-        FROM ({DEDUP_ORDERS})
+        FROM `{PROJECT}.{DATASET}.orders`
         WHERE payment_status = 'paid'
         GROUP BY date
         ORDER BY date
@@ -49,7 +41,7 @@ def get_monthly_revenue() -> pd.DataFrame:
           COUNT(*) AS total_orders,
           ROUND(SUM(total), 2) AS revenue,
           ROUND(AVG(total), 2) AS avg_order_value
-        FROM ({DEDUP_ORDERS})
+        FROM `{PROJECT}.{DATASET}.orders`
         WHERE payment_status = 'paid'
         GROUP BY month
         ORDER BY month
@@ -62,7 +54,7 @@ def get_orders_by_status() -> pd.DataFrame:
           payment_status,
           COUNT(*) AS orders,
           ROUND(SUM(total), 2) AS value
-        FROM ({DEDUP_ORDERS})
+        FROM `{PROJECT}.{DATASET}.orders`
         GROUP BY payment_status
     """)
 
