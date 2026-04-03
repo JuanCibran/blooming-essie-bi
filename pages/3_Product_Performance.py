@@ -80,9 +80,8 @@ try:
         "stock_status": "Estado", "price": "Precio",
     })
     _buf = io.StringIO()
-    _w = _csv.DictWriter(_buf, fieldnames=_csv_df.columns.tolist())
-    _w.writeheader()
-    _w.writerows(_csv_df.astype(str).to_dict("records"))
+    _w = _csv.writer(_buf)
+    _w.writerows([_csv_df.columns.tolist()] + _csv_df.astype(str).values.tolist())
     st.download_button(
         label="Descargar CSV",
         data=_buf.getvalue().encode("utf-8"),
