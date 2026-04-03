@@ -83,6 +83,35 @@ def extract_products() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def extract_abandoned_carts() -> pd.DataFrame:
+    """Pull abandoned checkouts from Tienda Nube."""
+    raw = fetch_all_pages("checkouts")
+
+    rows = []
+    for c in raw:
+        customer = c.get("contact_email") or (c.get("customer") or {}).get("email", "")
+        name = (c.get("customer") or {}).get("name", "") or c.get("contact_name", "")
+        rows.append(
+            {
+                "checkout_id": str(c.get("id")),
+                "created_at": c.get("created_at"),
+                "completed_at": c.get("completed_at"),
+                "email": customer,
+                "name": name,
+                "total": float(c.get("total", 0) or 0),
+                "currency": c.get("currency", ""),
+            }
+        )
+
+    df = pd.DataFrame(rows) if rows else pd.DataFrame(
+        columns=["checkout_id", "created_at", "completed_at", "email", "name", "total", "currency"]
+    )
+    # Solo los que NO completaron la compra y tienen email
+    if not df.empty:
+        df = df[df["completed_at"].isna() & df["email"].notna() & (df["email"] != "")]
+    return df
+
+
 def extract_customers() -> pd.DataFrame:
     """Pull all customers."""
     raw = fetch_all_pages("customers")

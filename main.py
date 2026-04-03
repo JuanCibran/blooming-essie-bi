@@ -3,7 +3,7 @@ Blooming Essie BI — Daily ETL pipeline.
 Pulls data from Tienda Nube and Facebook Ads, loads into BigQuery.
 Sends purchase events to Meta Conversions API (CAPI).
 """
-from etl.tienda_nube import extract_orders, extract_products, extract_customers
+from etl.tienda_nube import extract_orders, extract_products, extract_customers, extract_abandoned_carts
 from etl.bigquery_loader import load_dataframe
 from config.settings import FACEBOOK_ACCESS_TOKEN
 from google.cloud import bigquery
@@ -32,6 +32,10 @@ def run():
         "customers",
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
     )
+
+    print("\n[4/4] Extracting abandoned carts...")
+    carts_df = extract_abandoned_carts()
+    load_dataframe(carts_df, "abandoned_carts", write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
     # --- Meta Conversions API (optional) ---
     from config.settings import FACEBOOK_PIXEL_ID

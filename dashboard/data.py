@@ -105,6 +105,18 @@ def get_unconverted_customers() -> pd.DataFrame:
         ORDER BY created_at DESC
     """)
 
+@st.cache_data(ttl=3600)
+def get_abandoned_carts() -> pd.DataFrame:
+    return run_query(f"""
+        SELECT
+          name,
+          email,
+          ROUND(total, 2) AS total,
+          DATE(created_at) AS fecha
+        FROM `{PROJECT}.{DATASET}.abandoned_carts`
+        ORDER BY created_at DESC
+    """)
+
 # --- Product Performance ---
 
 @st.cache_data(ttl=3600)

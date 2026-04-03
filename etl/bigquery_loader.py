@@ -57,6 +57,15 @@ TABLE_SCHEMAS = {
         bigquery.SchemaField("orders_count", "INTEGER"),
         bigquery.SchemaField("total_spent", "FLOAT"),
     ],
+    "abandoned_carts": [
+        bigquery.SchemaField("checkout_id", "STRING"),
+        bigquery.SchemaField("created_at", "TIMESTAMP"),
+        bigquery.SchemaField("completed_at", "TIMESTAMP"),
+        bigquery.SchemaField("email", "STRING"),
+        bigquery.SchemaField("name", "STRING"),
+        bigquery.SchemaField("total", "FLOAT"),
+        bigquery.SchemaField("currency", "STRING"),
+    ],
     "facebook_campaign_insights": [
         bigquery.SchemaField("campaign_id", "STRING"),
         bigquery.SchemaField("campaign_name", "STRING"),

@@ -5,7 +5,7 @@ load_dotenv()
 
 import streamlit as st
 import plotly.express as px
-from dashboard.data import get_customer_segments, get_top_customers, get_unconverted_customers
+from dashboard.data import get_customer_segments, get_top_customers, get_unconverted_customers, get_abandoned_carts
 
 st.set_page_config(page_title="Customer Analysis", layout="wide")
 st.title("Customer Analysis")
@@ -15,6 +15,7 @@ try:
     segments = get_customer_segments()
     top = get_top_customers()
     unconverted = get_unconverted_customers()
+    carts = get_abandoned_carts()
 
     # KPIs
     col1, col2, col3, col4 = st.columns(4)
@@ -27,8 +28,9 @@ try:
         avg = segments['avg_spent'].mean()
         st.metric("Gasto Promedio por Cliente", f"${avg:,.0f}")
     with col4:
-        st.metric("Oportunidades sin convertir", len(unconverted),
-                  delta=f"{len(unconverted)} sin compra", delta_color="inverse")
+        st.metric("Carritos abandonados", len(carts),
+                  delta=f"${carts['total'].sum():,.0f} en juego" if not carts.empty else None,
+                  delta_color="inverse")
 
     st.divider()
 
@@ -86,6 +88,41 @@ try:
             label="Descargar lista para campaña (CSV)",
             data=_buf.getvalue().encode("utf-8"),
             file_name="leads_sin_convertir.csv",
+            mime="text/csv",
+        )
+
+    st.divider()
+
+    # Carritos abandonados
+    st.subheader(f"Carritos abandonados ({len(carts)})")
+    if carts.empty:
+        st.success("No hay carritos abandonados registrados.")
+    else:
+        cart_value = carts["total"].sum()
+        st.info(f"Hay **${cart_value:,.0f}** en carritos que no completaron la compra. Estos contactos ya mostraron intención — son los mejores candidatos para recuperación por email o retargeting.")
+        st.dataframe(
+            carts.rename(columns={
+                "name":  "Nombre",
+                "email": "Email",
+                "total": "Monto del carrito ($)",
+                "fecha": "Fecha",
+            }),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Monto del carrito ($)": st.column_config.NumberColumn(
+                    "Monto del carrito", format="$ %.0f",
+                ),
+            },
+        )
+        import io, csv as _csv
+        _buf2 = io.StringIO()
+        _w2 = _csv.writer(_buf2)
+        _w2.writerows([carts.columns.tolist()] + carts.astype(str).values.tolist())
+        st.download_button(
+            label="Descargar carritos para campaña (CSV)",
+            data=_buf2.getvalue().encode("utf-8"),
+            file_name="carritos_abandonados.csv",
             mime="text/csv",
         )
 
