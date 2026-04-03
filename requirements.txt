@@ -1,5 +1,4 @@
 python-dotenv==1.0.0
-grpcio==1.62.3
 google-cloud-bigquery==3.13.0
 facebook-business==17.0.4
 requests==2.31.0
