@@ -51,8 +51,9 @@ def run():
     if FACEBOOK_ACCESS_TOKEN and not FACEBOOK_ACCESS_TOKEN.startswith("your_"):
         from etl.facebook_ads import extract_campaign_insights
         print("\n[+] Extracting Facebook Ads insights...")
-        fb_df = extract_campaign_insights(days_back=1)
-        load_dataframe(fb_df, "facebook_campaign_insights")
+        fb_df = extract_campaign_insights(days_back=7)
+        if not fb_df.empty:
+            load_dataframe(fb_df, "facebook_campaign_insights")
     else:
         print("\n[!] Facebook Ads skipped — credentials not configured.")
 
