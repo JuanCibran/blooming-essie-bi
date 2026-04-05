@@ -1,6 +1,6 @@
 # Blooming Essie — Business Intelligence Pipeline
 
-ETL pipeline that pulls data from **Tienda Nube** and **Facebook Ads** into **Google BigQuery** daily.
+ETL pipeline that pulls data from **Tienda Nube** and **Facebook Ads** into **Google BigQuery**, with a **Streamlit dashboard** for analysis.
 
 ---
 
@@ -14,12 +14,21 @@ Blooming Essie/
 ├── config/
 │   └── settings.py             # Loads env vars
 ├── etl/
-│   ├── tienda_nube.py          # Tienda Nube extractor (orders, products, customers)
+│   ├── tienda_nube.py          # Tienda Nube extractor (orders, products, customers, abandoned carts)
 │   ├── facebook_ads.py         # Facebook Ads extractor (campaign insights)
+│   ├── meta_capi.py            # Meta Conversions API (purchase events)
 │   └── bigquery_loader.py      # BigQuery loader + schema definitions
-├── scheduler/
-│   └── run_daily.sh            # Cron script for daily execution
-└── logs/                       # Auto-created on first run
+├── dashboard/
+│   ├── data.py                 # BigQuery queries for the dashboard
+│   └── filters.py              # Date filter component
+├── Resumen.py                  # Dashboard home page
+├── pages/
+│   ├── 1_Revenue_Sales.py
+│   ├── 2_Customer_Analysis.py
+│   ├── 3_Product_Performance.py
+│   └── 4_Ads_Performance.py
+└── .github/workflows/
+    └── daily_pipeline.yml      # GitHub Actions — runs every 4 hours
 ```
 
 ---
@@ -47,8 +56,9 @@ Open `.env` and fill in:
 | `TIENDANUBE_ACCESS_TOKEN` | Tienda Nube API OAuth token |
 | `FACEBOOK_APP_ID` | Meta for Developers > Your App |
 | `FACEBOOK_APP_SECRET` | Meta for Developers > Your App > Settings |
-| `FACEBOOK_ACCESS_TOKEN` | Meta Business Suite > long-lived token |
+| `FACEBOOK_ACCESS_TOKEN` | Meta Business Suite > long-lived token (~60 days) |
 | `FACEBOOK_AD_ACCOUNT_ID` | Meta Ads Manager > Account ID (format: `act_XXXXXXXXX`) |
+| `FACEBOOK_PIXEL_ID` | Meta Events Manager > Pixel ID |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP service account JSON key |
 | `BIGQUERY_PROJECT_ID` | Google Cloud Console > Project ID |
 | `BIGQUERY_DATASET_ID` | Leave as `blooming_essie` or rename |
@@ -66,19 +76,11 @@ Open `.env` and fill in:
 python3 main.py
 ```
 
-### 5. Schedule daily runs (macOS cron)
+### 5. Automated runs
 
-```bash
-crontab -e
-```
+The pipeline runs automatically every 4 hours via **GitHub Actions** (`.github/workflows/daily_pipeline.yml`). No local cron needed.
 
-Add this line to run every day at 6:00 AM:
-
-```
-0 6 * * * /bin/bash "/Users/juancruzcibran/Desktop/Blooming Essie/scheduler/run_daily.sh"
-```
-
-Logs are saved to `logs/pipeline.log`.
+Credentials are stored as **GitHub Secrets** (`TIENDANUBE_USER_ID`, `TIENDANUBE_ACCESS_TOKEN`, `FACEBOOK_ACCESS_TOKEN`, etc.) and as a `GCP_SERVICE_ACCOUNT_JSON` secret for BigQuery auth.
 
 ---
 
@@ -86,14 +88,30 @@ Logs are saved to `logs/pipeline.log`.
 
 | Table | Source | Load mode |
 |---|---|---|
-| `orders` | Tienda Nube | Append (daily delta) |
+| `orders` | Tienda Nube | Full replace daily |
 | `products` | Tienda Nube | Full replace daily |
 | `customers` | Tienda Nube | Full replace daily |
-| `facebook_campaign_insights` | Facebook Ads | Append (daily delta) |
+| `abandoned_carts` | Tienda Nube | Full replace daily |
+| `facebook_campaign_insights` | Facebook Ads | Append (last 7 days) |
+
+---
+
+## Dashboard (Streamlit)
+
+Deployed on **Streamlit Cloud**. BigQuery credentials are stored in Streamlit Secrets as a `[gcp_service_account]` TOML section.
+
+| Page | Content |
+|---|---|
+| Resumen | KPIs, monthly revenue chart, alerts |
+| Revenue & Sales | Daily/monthly revenue by period |
+| Customer Analysis | Segments, top customers, campaign list (unconverted + abandoned carts) |
+| Product Performance | Stock by variant/size, low stock alerts |
+| Ads Performance | Facebook campaigns, CTR, CPC, ROAS |
 
 ---
 
 ## Notes
 
-- Orders and Facebook insights load only the **last 1 day** by default. Change `days_back` in `main.py` for backfills.
-- All tables are auto-created on first run if they don't exist.
+- Meta CAPI only sends purchase events from the **last 7 days** (Meta rejects older events).
+- Facebook Access Token is a long-lived token (~60 days). Rotate before expiry.
+- All BigQuery tables are auto-created on first run if they don't exist.
